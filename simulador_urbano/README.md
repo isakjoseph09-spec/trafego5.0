@@ -15,17 +15,18 @@ No terminal, a partir da pasta `simulador_urbano`:
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+$env:SIMULATOR_ADMIN_EMAIL = Read-Host "E-mail inicial do administrador"
 .\iniciar_simulador.ps1
 ```
 
-O iniciador usa o MariaDB local do XAMPP e o banco `trafego` (`root` sem senha, como configurado neste ambiente); mantenha o MySQL do XAMPP ligado. Ele cria as tabelas necessárias e inicia o aplicativo. Para outra configuração, defina `SQLALCHEMY_DATABASE_URI` antes de executar o script. Em produção, use um usuário MySQL dedicado e uma senha forte, configurados por variável de ambiente; não use `root` sem senha.
+Não é necessário instalar MySQL para executar localmente: o iniciador cria as tabelas e usa SQLite em `instance/simulador.db`. A senha inicial é solicitada sem ser exibida no primeiro início. Para usar outro banco, defina `SQLALCHEMY_DATABASE_URI` antes de executar o script.
 
 Abra `http://127.0.0.1:5000` para ver o site público, com o mapa interativo e o simulador de tráfego. A opção **Área de gestão** leva ao login do painel Flask, disponível também em `/painel` somente para Administradores e Engenheiros autenticados. O cadastro público cria uma conta de Operador para novos membros; esse perfil não acessa o painel de gestão. Na primeira inicialização local, o terminal solicita uma senha administrativa sem exibi-la; defina `SIMULATOR_ADMIN_EMAIL` se quiser outro e-mail. Em produção, configure a senha por variável privada e nunca a coloque no repositório.
 
 O link **Já tenho conta** leva ao login e, depois da autenticação, retorna ao site público. Para abrir a gestão, use **Área de gestão** e entre com uma conta autorizada.
 
-Os cadastros, cruzamentos e publicações são gravados no banco MySQL `trafego`. O arquivo `instance/simulador.db` é uma cópia local antiga e não recebe novas alterações ao iniciar pelo script. Para acessar o simulador, entre na conta e selecione um cruzamento.
+Os cadastros, cruzamentos e publicações locais são gravados em `instance/simulador.db`, que é ignorado pelo Git. Cada instalação local tem seus próprios dados. Para compartilhar um site e banco entre computadores, publique o serviço central no Render.
 
 Na seção de mapa inicial, os 16 semáforos azuis correspondem aos registros `highway=traffic_signals` do [GeoJSON exportado](../html/trafego2.0.py/data/export.geojson). O arquivo armazena coordenadas como longitude/latitude; o mapa as converte para latitude/longitude. Alguns registros ficam a menos de 9 metros um do outro; selecione-os na lista para aproximar o mapa e conferir cada ponto.
 

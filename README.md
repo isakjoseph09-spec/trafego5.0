@@ -4,18 +4,20 @@ Aplicação Flask para consultar o mapa, acompanhar propostas de mobilidade e ad
 
 ## Executar localmente no Windows
 
-Requisitos: Python 3.11+ e MariaDB/MySQL local (por exemplo, o MySQL do XAMPP).
+Requisito: Python 3.11+.
 
 ```powershell
 Set-Location .\simulador_urbano
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 $env:SIMULATOR_ADMIN_EMAIL = Read-Host "E-mail inicial do administrador"
 .\iniciar_simulador.ps1
 ```
 
-Inicie o MySQL do XAMPP antes do script. Na primeira inicialização, o script pede uma senha administrativa sem exibi-la. Para outro banco, defina `SQLALCHEMY_DATABASE_URI` no ambiente antes de iniciar.
+Não precisa instalar MySQL: o iniciador cria as tabelas em um banco SQLite local e pede uma senha administrativa sem exibi-la na primeira execução. Abra `http://127.0.0.1:5000`. Para outra configuração de banco, defina `SQLALCHEMY_DATABASE_URI` antes de iniciar.
 
-Abra `http://127.0.0.1:5000`. O cadastro público cria contas Operador; somente Administradores e Engenheiros acessam a Área de Gestão. O esquema e os cruzamentos demonstrativos são criados pelo `seed.py`.
+O cadastro público cria contas Operador; somente Administradores e Engenheiros acessam a Área de Gestão. O esquema e os cruzamentos demonstrativos são criados pelo `seed.py`.
 
 ## Um único site para vários computadores
 
