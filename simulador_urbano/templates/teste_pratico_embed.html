@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Teste na prática</title>
+    <style>
+        :root { color-scheme: dark; --ink:#edf2ee; --muted:#9ca9a2; --line:#343d45; --surface:#1e242b; --raised:#252c34; --green:#2ecc71; --green-dark:#20ae5a; }
+        * { box-sizing:border-box; }
+        html, body { width:100%; height:100%; margin:0; overflow:hidden; background:#151a20; color:var(--ink); font-family:"Segoe UI",sans-serif; }
+        button, input { font:inherit; }
+        .practice-layout { display:grid; height:100%; grid-template-columns:minmax(0,1fr) 250px; gap:10px; padding:10px; }
+        .practice-canvas-wrap { position:relative; min-width:0; overflow:hidden; border:1px solid var(--line); border-radius:12px; background:#151a20; }
+        #practice-canvas { width:100%; height:100%; }
+        #practice-canvas canvas { display:block; width:100%; height:100%; }
+        .practice-hud { position:absolute; z-index:2; top:12px; left:12px; display:grid; grid-template-columns:repeat(3,minmax(92px,1fr)); gap:6px; pointer-events:none; }
+        .practice-hud-card { min-width:92px; padding:8px 10px; border:1px solid rgba(255,255,255,.11); border-radius:8px; background:rgba(18,23,27,.88); }
+        .practice-hud-card span { display:block; color:var(--muted); font-size:9px; }
+        .practice-hud-card strong { display:block; margin-top:3px; font-size:12px; }
+        .practice-actions { position:absolute; z-index:3; right:12px; bottom:12px; display:flex; gap:7px; }
+        .practice-live { position:absolute; z-index:5; top:12px; right:12px; display:inline-flex; min-height:30px; align-items:center; gap:7px; padding:0 10px; border:1px solid rgba(255,255,255,.12); border-radius:999px; background:rgba(18,23,27,.86); color:#c4cec7; font-size:9px; font-weight:700; }
+        .practice-live::before { width:7px; height:7px; border-radius:50%; background:#2ecc71; box-shadow:0 0 10px rgba(46,204,113,.7); content:""; }
+        .practice-live[data-paused="true"]::before { background:#ffad76; box-shadow:0 0 10px rgba(255,173,118,.55); }
+        .practice-actions button { min-height:38px; padding:0 12px; border:1px solid var(--line); border-radius:7px; background:var(--raised); color:var(--ink); cursor:pointer; font-size:11px; font-weight:700; }
+        .practice-camera-select { min-height:38px; max-width:120px; padding:0 8px; border:1px solid var(--line); border-radius:7px; background:var(--raised); color:var(--ink); font-size:10px; }
+        #practice-cockpit { position:absolute; z-index:4; left:50%; bottom:10px; width:210px; transform:translateX(-50%); padding:7px 12px; border:1px solid rgba(255,255,255,.16); border-radius:9px; background:rgba(10,16,20,.82); text-align:center; pointer-events:none; }
+        #practice-cockpit[hidden] { display:none; }
+        #practice-cockpit-speed { color:#8de5ac; font-size:14px; font-weight:800; }
+        #practice-cockpit-gear { color:#fff; font-size:12px; }
+        #practice-cockpit-steer { display:block; width:38px; height:38px; margin:3px auto -3px; border:5px solid #9aa4a7; border-radius:50%; transition:transform .05s linear; }
+        .practice-actions button:last-child { border-color:var(--green); background:var(--green); color:#10251a; }
+        .practice-sidebar { display:grid; align-content:start; gap:8px; overflow:auto; }
+        .practice-panel { padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+        .practice-panel h2 { margin:0 0 10px; font-size:14px; }
+        .practice-control { display:grid; gap:6px; margin-bottom:11px; }
+        .practice-control label { display:flex; justify-content:space-between; color:#c4cec7; font-size:10px; }
+        .practice-control output { color:var(--green); font-weight:700; }
+        .practice-control input { width:100%; accent-color:var(--green); }
+        #practice-radar { width:100%; aspect-ratio:1; border:1px solid var(--line); border-radius:8px; background:#11171a; }
+        .practice-status { margin:8px 0 0; color:var(--muted); font-size:9px; line-height:1.5; }
+        .practice-ai-status { padding:8px 9px; border:1px solid rgba(112,165,255,.2); border-radius:7px; background:rgba(112,165,255,.07); color:#b7ceff; font-weight:600; }
+        .practice-fallback { display:grid; height:100%; place-items:center; padding:30px; color:var(--muted); text-align:center; }
+        @media (max-width:760px) {
+            .practice-layout { grid-template-columns:1fr; grid-template-rows:minmax(390px,1fr) 220px; }
+            .practice-sidebar { grid-template-columns:1fr 1fr; }
+            .practice-hud { grid-template-columns:repeat(2,minmax(92px,1fr)); }
+            .practice-hud-card:nth-child(3) { display:none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="practice-layout">
+        <div class="practice-canvas-wrap">
+            <div id="practice-canvas" role="application" aria-label="Simulador 3D interativo de trânsito urbano"></div>
+            <div class="practice-live" id="practice-live" data-paused="false">Simulação ao vivo</div>
+            <div class="practice-hud" aria-live="polite">
+                <div class="practice-hud-card"><span>Velocidade média</span><strong id="practice-avg-speed">-- km/h</strong></div>
+                <div class="practice-hud-card"><span>Espera média</span><strong id="practice-avg-wait">-- s</strong></div>
+                <div class="practice-hud-card"><span>Veículos / minuto</span><strong id="practice-flow">--</strong></div>
+            </div>
+            <div id="practice-cockpit" hidden>
+                <strong id="practice-cockpit-speed">0 km/h</strong>
+                <span> · Marcha <strong id="practice-cockpit-gear">P</strong></span>
+                <span id="practice-cockpit-steer" aria-hidden="true"></span>
+            </div>
+            <div class="practice-actions">
+                <button id="practice-pause" type="button">Pausar</button>
+                <button id="practice-camera" type="button">Câmera aérea</button>
+                <select id="practice-camera-mode" class="practice-camera-select" aria-label="Modo de câmera">
+                    <option value="1">1ª pessoa</option>
+                    <option value="2">2ª pessoa</option>
+                    <option value="3" selected>3ª pessoa</option>
+                    <option value="4">Aérea</option>
+                </select>
+                <button id="practice-day" type="button">Entardecer</button>
+                <button id="practice-audio" type="button">Ativar som</button>
+                <button id="practice-reset" type="button">Reiniciar</button>
+            </div>
+        </div>
+        <aside class="practice-sidebar" aria-label="Controles e radar">
+            <section class="practice-panel">
+                <h2>Controle do fluxo</h2>
+                <div class="practice-control">
+                    <label for="practice-green"><span>Verde dos semáforos</span><output id="practice-green-output">25 s</output></label>
+                    <input id="practice-green" type="range" min="8" max="60" value="25" step="1">
+                </div>
+                <div class="practice-control">
+                    <label for="practice-density"><span>Densidade de veículos</span><output id="practice-density-output">18</output></label>
+                    <input id="practice-density" type="range" min="6" max="36" value="18" step="1">
+                </div>
+                <div class="practice-control">
+                    <label for="practice-train"><span>Intervalo do trem</span><output id="practice-train-output">35 s</output></label>
+                    <input id="practice-train" type="range" min="20" max="90" value="35" step="5">
+                </div>
+                <div class="practice-control">
+                    <label for="practice-speed"><span>Velocidade do Tráfego</span><output id="practice-speed-output">1.0x</output></label>
+                    <input id="practice-speed" type="range" min="0.2" max="1.5" value="1.0" step="0.1">
+                </div>
+                <p class="practice-status">Use WASD ou as setas. O trem respeitará o intervalo configurado.</p>
+                <p class="practice-status" id="practice-signal-status" role="status" aria-live="polite">Semáforos · Leste–Oeste e Norte–Sul</p>
+                <p class="practice-status practice-ai-status" id="practice-ai-status" role="status" aria-live="polite">Coordenação dos veículos ativa.</p>
+            </section>
+            <section class="practice-panel">
+                <h2>Radar</h2>
+                <canvas id="practice-radar" width="260" height="260" aria-label="Minimapa do tráfego"></canvas>
+                <p class="practice-status">Amarelo: manual · Azul: automáticos · Vermelho: trem.</p>
+            </section>
+        </aside>
+    </div>
+    <script src="{{ url_for('static', filename='js/three.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/teste_pratico.js', v='25') }}"></script>
+</body>
+</html>

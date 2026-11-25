@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: fluxo-st
+    runtime: python
+    rootDir: simulador_urbano
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python seed.py && gunicorn app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /
+    disk:
+      name: fluxo-st-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: SQLALCHEMY_DATABASE_URI
+        value: sqlite:////var/data/simulador.db
+      - key: SIMULATOR_ADMIN_EMAIL
+        sync: false
+      - key: SIMULATOR_ADMIN_PASSWORD
+        sync: false
